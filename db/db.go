@@ -26,12 +26,17 @@ func GetSqlDbConnection() *gorm.DB {
 		panic(fmt.Errorf("error in sql.Open: %w", err))
 	}
 
+	db.Statement.RaiseErrorOnNotFound = true
+
 	// err = db.Ping()
 	// if err != nil {
 	// 	panic(fmt.Errorf("error pinging db: %w", err))
 	// }
 
-	db.AutoMigrate(&models.User{})
+	db.AutoMigrate(&models.User{}, &models.Task{}, &models.UserCredential{})
+	// db.AutoMigrate(&models.Task{})
+
+	db.Debug()
 
 	fmt.Println("DB Alive")
 	return db

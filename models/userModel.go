@@ -2,25 +2,20 @@ package models
 
 import (
 	"time"
-
-	"gorm.io/gorm"
 )
 
 type User struct {
-	gorm.Model
-	//UserId       uint           `gorm:"primaryKey;autoIncrement" json:"user_id"`
-	ID           int            `gorm:"primaryKey;autoIncrement" json:"id"`
-	FirstName    string         `json:"first_name,omitempty"`
-	LastName     string         `json:"last_name,omitempty"`
-	PhotoUrl     string         `json:"photo_url,omitempty"`
-	Email        string         `json:"email"`
-	Token        string         `json:"token"`
-	RefreshToken string         `json:"refresh_token"`
-	CreatedAt    time.Time      `json:"created_at"`
-	CreatedBy    string         `json:"created_by"`
-	UpdatedAt    time.Time      `json:"last_updated_at"`
-	UpdatedBy    string         `json:"last_updated_by"`
-	DeletedAt    gorm.DeletedAt `gorm:"-"`
+	ID           int       `gorm:"primaryKey" json:"user_id"`
+	FirstName    *string   `json:"first_name,omitempty"`
+	LastName     *string   `json:"last_name,omitempty"`
+	PhotoUrl     *string   `json:"photo_url,omitempty"`
+	Email        string    `gorm:"not null" json:"email"`
+	Token        string    `gorm:"not null" json:"token"`
+	RefreshToken string    `gorm:"not null" json:"refresh_token"`
+	CreatedAt    time.Time `gorm:"not null" json:"created_at"`
+	CreatedBy    string    `gorm:"not null" json:"created_by"`
+	UpdatedAt    time.Time `gorm:"not null" json:"last_updated_at"`
+	UpdatedBy    string    `gorm:"not null" json:"last_updated_by"`
 }
 
 // func GetUserFromRow(rows *sql.Rows) *User {

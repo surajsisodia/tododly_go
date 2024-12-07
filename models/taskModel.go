@@ -1,11 +1,15 @@
 package models
 
-import "time"
+import (
+	"time"
+)
 
 type Task struct {
-	Id          int       `json:"task_id"`
+	ID          uint      `gorm:"primaryKey" json:"task_id"`
 	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	Description *string   `json:"description"`
+	CreatedAt   time.Time `gorm:"not null" json:"created_at"`
+	CreatedBy   string    `json:"created_by"`
+	UpdatedAt   time.Time `json:"last_updated_at"`
+	UpdatedBy   string    `json:"last_updated_by"`
 }

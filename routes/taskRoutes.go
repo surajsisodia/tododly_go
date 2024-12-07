@@ -12,11 +12,12 @@ func TaskRoutes(router *mux.Router) {
 
 	//router := mux.NewRouter()
 
-	taskSub := router.Methods(http.MethodGet, http.MethodPost).Subrouter()
+	taskSub := router.Methods(http.MethodGet, http.MethodPost, http.MethodPatch).Subrouter()
 
-	taskSub.HandleFunc("/api/tasks", controllers.GetAllTasks).Methods("GET")
-	taskSub.HandleFunc("/api/task", controllers.GetSingleTask).Methods("GET")
-	taskSub.HandleFunc("/api/task", controllers.CreateNewTask).Methods("POST")
+	taskSub.HandleFunc("/api/tasks", controllers.GetAllTasks).Methods(http.MethodGet)
+	taskSub.HandleFunc("/api/task/{task_id}", controllers.GetSingleTask).Methods(http.MethodGet)
+	taskSub.HandleFunc("/api/task", controllers.CreateNewTask).Methods(http.MethodPost)
+	taskSub.HandleFunc("/api/task/{task_id}", controllers.UpdateTask).Methods(http.MethodPatch)
 
 	taskSub.Use(middlewares.AuthMiddleware)
 
