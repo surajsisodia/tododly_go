@@ -17,6 +17,8 @@ func main() {
 	router := mux.NewRouter()
 
 	//router.Use(middlewares.AuthMiddleware)
+	// router.Use(middlewares.RequestBodyMiddleware)
+
 	routes.TaskRoutes(router)
 	routes.AuthRoutes(router)
 	routes.UserRoutes(router)
@@ -26,7 +28,7 @@ func main() {
 	router.HandleFunc("/", serveHome).Methods("GET")
 
 	fmt.Println("Server is up and running")
-	log.Fatal(http.ListenAndServe(":8000", router))
+	log.Fatal(http.ListenAndServe("localhost:8000", router))
 
 }
 
