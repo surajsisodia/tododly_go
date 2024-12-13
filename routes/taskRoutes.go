@@ -15,9 +15,9 @@ func TaskRoutes(router *mux.Router) {
 	taskSub := router.PathPrefix("/api/task").Subrouter()
 	// taskSub := router.Methods(http.MethodGet, http.MethodPost, http.MethodPatch).Subrouter()
 
-	taskSub.HandleFunc("/", controllers.GetAllTasks).Methods(http.MethodGet)
+	taskSub.HandleFunc("", controllers.GetAllTasks).Methods(http.MethodGet)
 	taskSub.HandleFunc("/{task_id}", controllers.GetSingleTask).Methods(http.MethodGet)
-	taskSub.HandleFunc("/", controllers.CreateNewTask).Methods(http.MethodPost)
+	taskSub.HandleFunc("", controllers.CreateNewTask).Methods(http.MethodPost)
 	taskSub.HandleFunc("/{task_id}", controllers.UpdateTask).Methods(http.MethodPatch)
 
 	// privateRoute.Handler(LoggingMiddleware(AuthMiddleware(privateRoute.GetHandler())))

@@ -12,6 +12,11 @@ import (
 func RequestBodyMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
+		if !(r.Method == http.MethodPost || r.Method == http.MethodPatch) {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		v, _ := io.ReadAll(r.Body)
 
 		formatedJsonBytes, err := removeWhoColumns(v)

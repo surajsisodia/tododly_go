@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"tododly/utils"
 
 	"github.com/golang-jwt/jwt/v5"
+	"gorm.io/gorm"
 )
 
 func Login(w http.ResponseWriter, r *http.Request) {
@@ -30,16 +32,17 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	email := mapData["email"]
 	password := mapData["password"]
 
-	var rowCount int64
-	db.Connections.Model(&models.UserCredential{}).Where("email = ?", email).Where("password = ?", password).Count(&rowCount)
+	userCred := models.UserCredential{}
 
-	if rowCount == 0 {
+	res := db.Connections.Where("email = ?", email).Where("password = ?", password).First(&userCred)
+
+	if errors.Is(res.Error, gorm.ErrRecordNotFound) {
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("User doesn't exist"))
 		panic("User not exists")
 	}
 
-	tokenString, err := createToken(email)
+	tokenString, err := createToken(userCred.Email, userCred.UserId)
 
 	if err != nil {
 		panic(err)
@@ -86,16 +89,13 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := createUser(&userCrendential)
-
-	tokenString, err := createToken(user.Email)
+	user, err := createUser(&userCrendential)
 
 	if err != nil {
+		fmt.Println(err)
 		w.WriteHeader(http.StatusBadRequest)
-		panic("Token generation failed")
+		return
 	}
-
-	user.Token = tokenString
 
 	responseData, err := json.Marshal(user)
 
@@ -110,9 +110,17 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func createUser(userCredentials *models.UserCredential) *models.User {
+func createUser(userCredentials *models.UserCredential) (*models.User, error) {
+
+	tokenString, err := createToken(userCredentials.Email, userCredentials.UserId)
+
+	if err != nil {
+		return nil, errors.New("token generation failed")
+	}
+
 	user := models.User{
 		Email:     userCredentials.Email,
+		Token:     &tokenString,
 		CreatedAt: time.Now(),
 		CreatedBy: "new_user",
 		UpdatedAt: time.Now(),
@@ -123,14 +131,15 @@ func createUser(userCredentials *models.UserCredential) *models.User {
 	fmt.Println("New User Created: ", user.ID)
 
 	userCredentials.UserId = user.ID
-	db.Connections.Create(userCredentials)
+	db.Connections.Create(&userCredentials)
 
-	return &user
+	return &user, nil
 }
 
-func createToken(username string) (string, error) {
+func createToken(username string, userId int) (string, error) {
 	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"username": username,
+		"user_id":  userId,
 		"exp":      time.Now().Add(time.Hour * 24).Unix(),
 	})
 

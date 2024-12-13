@@ -13,8 +13,9 @@ import (
 
 func GetAllTasks(w http.ResponseWriter, r *http.Request) {
 
+	user_id := r.Context().Value("user_id").(string)
 	var tasks []models.Task
-	res := db.Connections.Limit(10).Find(&tasks)
+	res := db.Connections.Limit(10).Where("user_id = ?", user_id).Find(&tasks)
 
 	if res.Error != nil || len(tasks) == 0 {
 		fmt.Println("Data no found: ", res.Error)
@@ -30,13 +31,13 @@ func GetAllTasks(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetSingleTask(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Getting one item")
 
+	user_id := r.Context().Value("user_id").(string)
 	vars := mux.Vars(r)
 	taskID := vars["task_id"]
 
 	var task models.Task
-	db.Connections.Where("id = ?", taskID).First(&task)
+	db.Connections.Where("id = ?", taskID).Where("user_id = ?", user_id).First(&task)
 
 	fmt.Println("Task Found: ", task)
 
@@ -63,6 +64,16 @@ func CreateNewTask(w http.ResponseWriter, r *http.Request) {
 
 	username := r.Context().Value("username").(string)
 
+	userCred := models.UserCredential{}
+	res := db.Connections.Where("email = ?", username).First(&userCred)
+
+	if res.Error != nil {
+		fmt.Println("User Not Found")
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("User Not Found"))
+		return
+	}
+
 	task := models.Task{}
 	err := json.Unmarshal([]byte(v), &task)
 
@@ -73,6 +84,7 @@ func CreateNewTask(w http.ResponseWriter, r *http.Request) {
 
 	task.CreatedBy = username
 	task.UpdatedBy = username
+	task.UserId = userCred.UserId
 
 	db.Connections.Create(&task)
 
