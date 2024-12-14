@@ -143,7 +143,7 @@ func createToken(username string, userId int) (string, error) {
 		"exp":      time.Now().Add(time.Hour * 24).Unix(),
 	})
 
-	tokenString, err := claims.SignedString(utils.SecretKey)
+	tokenString, err := claims.SignedString(utils.JWT_SECRET_KEY)
 
 	if err != nil {
 		return "", err

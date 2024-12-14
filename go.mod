@@ -6,6 +6,7 @@ require (
 	github.com/godoes/gorm-oracle v1.6.14
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/gorilla/mux v1.8.0
+	github.com/joho/godotenv v1.5.1
 	gorm.io/gorm v1.25.12
 )
 

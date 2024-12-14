@@ -57,7 +57,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 func verifyToken(tokenString string) (string, float64, error) {
 	fmt.Println("Verifying token: ", tokenString)
 	claims := jwt.MapClaims{}
-	token, err := jwt.ParseWithClaims(tokenString, &claims, func(t *jwt.Token) (interface{}, error) { return utils.SecretKey, nil })
+	token, err := jwt.ParseWithClaims(tokenString, &claims, func(t *jwt.Token) (interface{}, error) { return utils.JWT_SECRET_KEY, nil })
 
 	if err != nil || !token.Valid {
 		return "", -1, errors.New("invalid token")

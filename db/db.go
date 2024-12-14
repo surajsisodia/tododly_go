@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"log"
 	"tododly/models"
 	"tododly/utils"
 
@@ -11,31 +12,18 @@ import (
 
 var Connections *gorm.DB
 
-func init() {
-	Connections = GetSqlDbConnection()
-}
-
 func GetSqlDbConnection() *gorm.DB {
+	fmt.Println("Connecting to DB...")
+	connectionString := "oracle://" + utils.DB_USERNAME + ":" + utils.DB_PASSWORD + "@" + utils.DB_HOST + ":" + utils.DB_PORT + "/" + utils.DB_SID
 
-	connectionString := "oracle://" + "fusion" + ":" + "welcome1" + "@" + utils.DB_HOST + ":" + "1521" + "/" + "FREE"
-
-	// db, err := sql.Open("oracle", connectionString)
 	db, err := gorm.Open(oracle.Open(connectionString), &gorm.Config{})
 
 	if err != nil {
-		panic(fmt.Errorf("error in sql.Open: %w", err))
+		log.Fatalf("Error is sql.Open : %s", err)
 	}
 
 	db.Statement.RaiseErrorOnNotFound = true
-
-	// err = db.Ping()
-	// if err != nil {
-	// 	panic(fmt.Errorf("error pinging db: %w", err))
-	// }
-
 	db.AutoMigrate(&models.User{}, &models.Task{}, &models.UserCredential{})
-	// db.AutoMigrate(&models.Task{})
-
 	db.Debug()
 
 	fmt.Println("DB Alive")

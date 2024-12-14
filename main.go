@@ -7,12 +7,19 @@ import (
 	"tododly/db"
 	"tododly/middlewares"
 	"tododly/routes"
+	"tododly/utils"
 
 	"github.com/gorilla/mux"
 )
 
 func main() {
-	db.GetSqlDbConnection()
+	utils.LoadEnvVars()
+	db.Connections = db.GetSqlDbConnection()
+
+	if db.Connections == nil {
+		log.Fatal("Database connection Failure")
+		return
+	}
 
 	router := mux.NewRouter()
 
