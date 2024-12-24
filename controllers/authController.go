@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"time"
 	"tododly/db"
@@ -12,6 +13,7 @@ import (
 	"tododly/utils"
 
 	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -34,12 +36,23 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	userCred := models.UserCredential{}
 
-	res := db.Connections.Where("email = ?", email).Where("password = ?", password).First(&userCred)
+	// res := db.Connections.Where("email = ?", email).Where("password = ?", password).First(&userCred)
+	res := db.Connections.Where("email = ?", email).First(&userCred)
 
 	if errors.Is(res.Error, gorm.ErrRecordNotFound) {
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("User doesn't exist"))
-		panic("User not exists")
+		log.Println("User not exists")
+		return
+	}
+
+	isValidPassword, err := verifyPassword(password, userCred.Password)
+
+	if !isValidPassword || err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("Incorrect username/password"))
+		log.Println("Incorrect password")
+		return
 	}
 
 	tokenString, err := createToken(userCred.Email, userCred.UserId)
@@ -112,6 +125,14 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 
 func createUser(userCredentials *models.UserCredential) (*models.User, error) {
 
+	hashedPassword, err := generatePasswordHash(userCredentials.Password)
+
+	if err != nil {
+		return nil, err
+	}
+
+	userCredentials.Password = string(hashedPassword)
+
 	tokenString, err := createToken(userCredentials.Email, userCredentials.UserId)
 
 	if err != nil {
@@ -152,4 +173,26 @@ func createToken(username string, userId int) (string, error) {
 	fmt.Println("Token generated: ", tokenString)
 	return tokenString, nil
 
+}
+
+func generatePasswordHash(password string) (string, error) {
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), 10)
+
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
+
+	return string(hash), nil
+}
+
+func verifyPassword(password string, hashedPassword string) (bool, error) {
+	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+
+	if err != nil {
+		log.Println(err)
+		return false, err
+	}
+	return true, nil
 }
