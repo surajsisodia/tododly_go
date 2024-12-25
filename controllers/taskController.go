@@ -2,8 +2,8 @@ package controllers
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"tododly/db"
 	"tododly/models"
@@ -18,12 +18,19 @@ func GetAllTasks(w http.ResponseWriter, r *http.Request) {
 	res := db.Connections.Limit(10).Where("user_id = ?", user_id).Find(&tasks)
 
 	if res.Error != nil || len(tasks) == 0 {
-		fmt.Println("Data no found: ", res.Error)
+		log.Println("Data no found: ", res.Error)
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("No data available"))
+		return
 	}
 
-	resBody, _ := json.Marshal(&tasks)
+	resBody, err := json.Marshal(&tasks)
+
+	if err != nil {
+		log.Println("Error encountered: ", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 	w.Write(resBody)
 	w.WriteHeader(http.StatusAccepted)
@@ -37,20 +44,21 @@ func GetSingleTask(w http.ResponseWriter, r *http.Request) {
 	taskID := vars["task_id"]
 
 	var task models.Task
-	db.Connections.Where("id = ?", taskID).Where("user_id = ?", user_id).First(&task)
+	res := db.Connections.Where("id = ?", taskID).Where("user_id = ?", user_id).First(&task)
 
-	fmt.Println("Task Found: ", task)
-
-	if task.Title == "" {
+	if res.Error != nil {
+		log.Println("Error encountered: ", res.Error)
 		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("No data available"))
 		return
 	}
 
 	resBody, err := json.Marshal(&task)
 
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		panic(err)
+		log.Println("Error encountered: ", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	w.Write(resBody)
@@ -60,17 +68,15 @@ func GetSingleTask(w http.ResponseWriter, r *http.Request) {
 func CreateNewTask(w http.ResponseWriter, r *http.Request) {
 
 	v, _ := io.ReadAll(r.Body)
-	fmt.Println(string(v))
-
 	username := r.Context().Value("username").(string)
 
 	userCred := models.UserCredential{}
 	res := db.Connections.Where("email = ?", username).First(&userCred)
 
 	if res.Error != nil {
-		fmt.Println("User Not Found")
+		log.Println("Error Encountered: ", res.Error)
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("User Not Found"))
+		w.Write([]byte("Unautorized Access"))
 		return
 	}
 
@@ -78,17 +84,24 @@ func CreateNewTask(w http.ResponseWriter, r *http.Request) {
 	err := json.Unmarshal([]byte(v), &task)
 
 	if err != nil {
+		log.Println("Error Encountered: ", err)
 		w.WriteHeader(http.StatusBadRequest)
-		panic(err)
+		w.Write([]byte("Invalid Request Body"))
+		return
 	}
 
 	task.CreatedBy = username
 	task.UpdatedBy = username
 	task.UserId = userCred.UserId
 
-	db.Connections.Create(&task)
+	res = db.Connections.Create(&task)
 
-	// fmt.Println("Task Created with task_id: ", task.Id)
+	if res.Error != nil {
+		log.Println("Error creating task: ", res.Error)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Internal Server Error"))
+		return
+	}
 
 	resBody, _ := json.Marshal(&task)
 	w.Write(resBody)
@@ -97,7 +110,6 @@ func CreateNewTask(w http.ResponseWriter, r *http.Request) {
 
 func UpdateTask(w http.ResponseWriter, r *http.Request) {
 	v, _ := io.ReadAll(r.Body)
-	fmt.Println(string(v))
 	taskID := mux.Vars(r)["task_id"]
 	username := r.Context().Value("username").(string)
 
@@ -105,7 +117,9 @@ func UpdateTask(w http.ResponseWriter, r *http.Request) {
 	err := json.Unmarshal([]byte(v), &task)
 
 	if err != nil {
+		log.Println("Error Encountered: ", err)
 		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Invalid Request Body"))
 		return
 	}
 
@@ -116,6 +130,8 @@ func UpdateTask(w http.ResponseWriter, r *http.Request) {
 	res := db.Connections.Model(&models.Task{}).Where("id = ?", taskID).Updates(mapBody)
 
 	if res.Error != nil {
+		log.Println("Error updating task: ", res.Error)
+		w.Write([]byte("Error updating task"))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -123,6 +139,7 @@ func UpdateTask(w http.ResponseWriter, r *http.Request) {
 	res = db.Connections.Where("id = ?", taskID).Find(&task)
 
 	if res.Error != nil {
+		log.Println("Error fetching task: ", res.Error)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
