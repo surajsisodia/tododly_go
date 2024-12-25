@@ -1,23 +1,27 @@
 package middlewares
 
 import (
-	"fmt"
+	"bytes"
+	"io"
+	"log"
 	"net/http"
 )
 
 func LoggerMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		fmt.Println("Incoming Request: ", r.URL.Path)
-		fmt.Println("Request Method: ", r.Method)
+		log.Println("Incoming Request: ", r.URL.Path)
+		log.Println("Request Method: ", r.Method)
 
-		// reqBody, err := io.ReadAll(r.Body)
-		// if err == nil || r.Method != "GET" {
-		// 	fmt.Println("Request Body: ", string(reqBody))
-		// }
+		if r.Body != nil {
+			reqBody, err := io.ReadAll(r.Body)
+			r.Body = io.NopCloser(bytes.NewBuffer(reqBody))
 
-		w.Header().Set("Content-Type", "application/json")
+			if err == nil {
+				log.Println("Request Body: ", string(reqBody))
+			}
+		}
+
 		next.ServeHTTP(w, r)
-
 	})
 }

@@ -30,7 +30,7 @@ func main() {
 	routes.AuthRoutes(router)
 	routes.UserRoutes(router)
 
-	router.Use(middlewares.LoggerMiddleware)
+	router.Use(middlewares.LoggerMiddleware, middlewares.ResponseBodyMiddleware)
 
 	router.HandleFunc("/", serveHome).Methods("GET")
 
