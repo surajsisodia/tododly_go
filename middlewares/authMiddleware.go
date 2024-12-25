@@ -3,9 +3,8 @@ package middlewares
 import (
 	"context"
 	"errors"
-	"fmt"
+	"log"
 	"net/http"
-	"reflect"
 	"strconv"
 	"strings"
 	"tododly/utils"
@@ -21,12 +20,12 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		isValidToken := false
 
 		if reqHeader == "" {
-			fmt.Println("Header is empty")
+			log.Println("Header is empty")
 			isValidToken = false
 		} else {
 			strComp := strings.Split(reqHeader, " ")
 			if strComp[0] != "Bearer" {
-				fmt.Println("Not a bearer auth")
+				log.Println("Not a bearer auth")
 				isValidToken = false
 			} else {
 				username, user_id, _ := verifyToken(strings.Split(reqHeader, " ")[1])
@@ -37,7 +36,6 @@ func AuthMiddleware(next http.Handler) http.Handler {
 					ctx := r.Context()
 					ctx = context.WithValue(ctx, "username", username)
 					ctx = context.WithValue(ctx, "user_id", strconv.FormatFloat(user_id, 'f', 0, 64))
-					fmt.Println(reflect.ValueOf(user_id))
 					r = r.WithContext(ctx)
 				}
 			}
@@ -55,7 +53,6 @@ func AuthMiddleware(next http.Handler) http.Handler {
 }
 
 func verifyToken(tokenString string) (string, float64, error) {
-	fmt.Println("Verifying token: ", tokenString)
 	claims := jwt.MapClaims{}
 	token, err := jwt.ParseWithClaims(tokenString, &claims, func(t *jwt.Token) (interface{}, error) { return utils.JWT_SECRET_KEY, nil })
 
@@ -63,8 +60,6 @@ func verifyToken(tokenString string) (string, float64, error) {
 		return "", -1, errors.New("invalid token")
 	}
 
-	fmt.Println("CLAIMS: ", claims["username"])
-	fmt.Println("CLAIMS: ", claims["user_id"])
 	username := claims["username"].(string)
 	user_id := claims["user_id"].(float64)
 
